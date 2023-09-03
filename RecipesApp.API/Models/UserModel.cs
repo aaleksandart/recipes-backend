@@ -1,4 +1,6 @@
-﻿namespace RecipesApp.API.Models
+﻿using RecipesApp.API.Models.Interfaces;
+
+namespace RecipesApp.API.Models
 {
     public class UserModel : IUserModel
     {
