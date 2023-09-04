@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using RecipesApp.API.Models;
+using MongoDB.Driver;
+using RecipesApp.API.Services.Interfaces;
+using RecipesApp.DATA.Models;
+using RecipesApp.DATA.Services.Interfaces;
 
 namespace RecipesApp.API.Controllers
 {
@@ -8,34 +11,62 @@ namespace RecipesApp.API.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        [HttpGet]
-        public async Task<List<UserModel>> GetUsersAsync()
+        private readonly IUserService _userService;
+        private readonly IValidationService _validationService;
+        public UserController(IUserService userService, IRecipeService recipeService, IValidationService validationService)
         {
-            return new List<UserModel>();
+            _userService = userService;
+            _validationService = validationService;
         }
 
+        [HttpGet]
+        public async Task<List<UserModel>> GetUsersAsync() =>
+            await _userService.GetAllUsers();
+
         [HttpGet("{id}")]
-        public async Task<UserModel> GetUserByIdAsync(int id)
+        public async Task<IActionResult> GetUserByIdAsync(string id)
         {
-            return new UserModel();
+            //Validating id
+            var validation = _validationService.ValidateUser(null, null, id);
+            if (!string.IsNullOrEmpty(validation))
+                return BadRequest();
+            //Getting User and returning result
+            var result = await _userService.GetUserById(id);
+            return (string.IsNullOrEmpty(result.Id) ? NotFound() : Ok(result));
         }
 
         [HttpPost]
-        public async Task<ActionResult> CreateUserAsync(UserModel user)
+        public async Task<IActionResult> CreateUserAsync(UserModel user)
         {
-            return Ok();
+            //Validate new user
+            var validation = _validationService.ValidateUser(user, null, null);
+            if (!string.IsNullOrEmpty(validation))
+                return BadRequest(validation);
+            //Create user and returning status code result
+            return await _userService.CreateUser(user) ? StatusCode(201) : StatusCode(500);
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult> UpdateUserAsync(UserModel user)
+        public async Task<IActionResult> UpdateUserAsync(UserModel user)
         {
-            return Ok();
+            //Validate user
+            var validation = _validationService.ValidateUser(user, null, null);
+            if (!string.IsNullOrEmpty(validation))
+                return BadRequest(validation);
+            //Update user and returning result
+            var result = await _userService.UpdateUser(user);
+            return (string.IsNullOrEmpty(result.Id) ? StatusCode(500) : Ok(result));
         }
 
         [HttpDelete("{id}")]
-        public async Task<ActionResult> DeleteUserAsync(int id)
+        public async Task<ActionResult> DeleteUserAsync(string id)
         {
-            return Ok();
+            //Validating id
+            var validation = _validationService.ValidateUser(null, null, id);
+            if (!string.IsNullOrEmpty(validation))
+                return BadRequest();
+            //Deleting user and returning status code result
+            return await _userService.DeleteUser(id) ? StatusCode(200) : StatusCode(500);
         }
     }
 }

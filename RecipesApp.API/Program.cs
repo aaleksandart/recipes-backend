@@ -1,6 +1,8 @@
-using RecipesApp.API.Helpers;
-using RecipesApp.API.Helpers.Interfaces;
+using MongoDB.Driver;
+using RecipesApp.API.Services;
+using RecipesApp.API.Services.Interfaces;
 using RecipesApp.DATA.Database;
+using RecipesApp.DATA.Entities;
 using RecipesApp.DATA.Repositories;
 using RecipesApp.DATA.Repositories.Interfaces;
 using RecipesApp.DATA.Services;
@@ -11,14 +13,10 @@ var services = builder.Services;
 var config = builder.Configuration;
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 
-//Helpers
-services.AddScoped<IUserValidation, UserValidation>();
-services.AddScoped<IRecipeValidation, RecipeValidation>();
-
 //Services
+services.AddScoped<IValidationService, ValidationService>();
 services.AddScoped<IUserService, UserService>();
 services.AddScoped<IRecipeService, RecipeService>();
 
@@ -27,7 +25,13 @@ services.AddSingleton<IUserRepository, UserRepository>();
 services.AddSingleton<IRecipeRepository, RecipeRepository>();
 
 //Database
-services.Configure<RecipesDatabaseSettings>(config.GetSection("MongoDB:Database"));
+services.Configure<RecipesDatabaseSettings>(options =>
+{
+    options.ConnectionString = config["MongoDB:Connection"] ?? string.Empty;
+    options.DatabaseName = config["MongoDB:Database"] ?? string.Empty;
+    options.UsersCollection = config["MongoDB:UsersCollection"] ?? string.Empty;
+    options.RecipesCollection = config["MongoDB:RecipesCollection"] ?? string.Empty;
+});
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
